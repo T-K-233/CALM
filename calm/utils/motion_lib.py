@@ -310,7 +310,10 @@ class MotionLib(DeviceDtypeModuleMixin):
         blend_exp = blend.unsqueeze(-1)
         key_pos = (1.0 - blend_exp) * key_pos0 + blend_exp * key_pos1
 
+        # local_rot: (2, 15, 4)
         local_rot = torch_utils.slerp(local_rot0, local_rot1, torch.unsqueeze(blend, axis=-1))
+        
+        # dof_pos: (2, 28)
         dof_pos = self._local_rotation_to_dof(local_rot)
 
         return root_pos, root_rot, dof_pos, root_vel, root_ang_vel, dof_vel, key_pos
@@ -451,10 +454,14 @@ class MotionLib(DeviceDtypeModuleMixin):
         return dof_vels
     
     def _local_rotation_to_dof(self, local_rot):
+        # body_ids: [1, 2, 3, 4, 6, 7, 9, 10, 11, 12, 13, 14]
         body_ids = self._dof_body_ids
+        # dof_offsets: [0, 3, 6, 9, 10, 13, 14, 17, 18, 21, 24, 25, 28]
         dof_offsets = self._dof_offsets
 
         n = local_rot.shape[0]
+        
+        # self._num_dof: 28
         dof_pos = torch.zeros((n, self._num_dof), dtype=torch.float, device=self._device)
 
         for j in range(len(body_ids)):
